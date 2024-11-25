@@ -2,7 +2,6 @@ package com.epam.microservice.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.List;
 
 @Builder

@@ -1,0 +1,1 @@
+This is a microservice which helps tracking trainers' activity

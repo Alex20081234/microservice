@@ -1,5 +1,6 @@
 package com.epam.microservice.service;
 
+import com.epam.microservice.common.EntityNotFoundException;
 import com.epam.microservice.domain.Trainer;
 import com.epam.microservice.domain.Training;
 import com.epam.microservice.dto.ActionType;
@@ -59,19 +60,19 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void submitWorkloadChangesWithExistingTrainerShouldThrowIllegalArgumentExceptionWhenNonExistent() {
+    void submitWorkloadChangesWithExistingTrainerShouldThrowEntityNotFoundExceptionWhenNonExistent() {
         when(repository.existsByUsername(anyString())).thenReturn(true);
-        RuntimeException e = assertThrows(IllegalArgumentException.class, () -> service.submitWorkloadChanges(trainer, training, ActionType.ADD));
-        assertEquals("Invalid field inputted", e.getMessage());
+        RuntimeException e = assertThrows(EntityNotFoundException.class, () -> service.submitWorkloadChanges(trainer, training, ActionType.ADD));
+        assertEquals("Trainer with username Tom.Smith was not found", e.getMessage());
     }
 
     @Test
     void submitWorkloadChangesWithExistingTrainerShouldTryToMakeChangesWhenActionDelete() {
         when(repository.existsByUsername(anyString())).thenReturn(true);
-        doNothing().when(trainingRepository).deleteByDateAndDurationAndTrainer_Username(any(), anyInt(), anyString());
+        doNothing().when(trainingRepository).deleteByParameters(any(), anyInt(), anyString());
         service.submitWorkloadChanges(trainer, training, ActionType.DELETE);
         verify(trainingRepository, times(1))
-                .deleteByDateAndDurationAndTrainer_Username(LocalDate.of(2024, 10, 10), 20, "Tom.Smith");
+                .deleteByParameters(LocalDate.of(2024, 10, 10), 20, "Tom.Smith");
     }
 
     @Test
@@ -89,39 +90,6 @@ class TrainerServiceImplTest {
         when(repository.existsByUsername(anyString())).thenReturn(false);
         RuntimeException e = assertThrows(IllegalArgumentException.class, () -> service.submitWorkloadChanges(trainer, training, ActionType.DELETE));
         assertEquals("Invalid action type for nonexistent trainer", e.getMessage());
-    }
-
-    @Test
-    void submitWorkloadChangesShouldThrowIllegalArgumentExceptionWhenTrainerInvalid() {
-        trainer.setUsername(null);
-        assertSubmitWorkloadThrows();
-        setUp();
-        trainer.setUsername("");
-        assertSubmitWorkloadThrows();
-        setUp();
-        trainer.setFirstName(null);
-        assertSubmitWorkloadThrows();
-        setUp();
-        trainer.setFirstName("");
-        assertSubmitWorkloadThrows();
-        setUp();
-        trainer.setLastName(null);
-        assertSubmitWorkloadThrows();
-        setUp();
-        trainer.setLastName("");
-        assertSubmitWorkloadThrows();
-        setUp();
-        trainer.setIsActive(null);
-        assertSubmitWorkloadThrows();
-    }
-
-    @Test
-    void submitWorkloadChangesShouldThrowIllegalArgumentExceptionWhenTrainingInvalid() {
-        training.setDate(null);
-        assertSubmitWorkloadThrows();
-        setUp();
-        training.setDuration(-1);
-        assertSubmitWorkloadThrows();
     }
 
     @Test
@@ -148,13 +116,8 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void getSummaryShouldThrowIllegalArgumentExceptionWhenNonExistentTrainer() {
-        RuntimeException e = assertThrows(IllegalArgumentException.class, () -> service.getSummary("Non.Existent"));
-        assertEquals("Invalid field inputted", e.getMessage());
-    }
-
-    private void assertSubmitWorkloadThrows() {
-        RuntimeException e = assertThrows(IllegalArgumentException.class, () -> service.submitWorkloadChanges(trainer, training, ActionType.ADD));
-        assertEquals("Invalid field inputted", e.getMessage());
+    void getSummaryShouldThrowEntityNotFoundExceptionWhenNonExistentTrainer() {
+        RuntimeException e = assertThrows(EntityNotFoundException.class, () -> service.getSummary("Non.Existent"));
+        assertEquals("Trainer with username Non.Existent was not found", e.getMessage());
     }
 }

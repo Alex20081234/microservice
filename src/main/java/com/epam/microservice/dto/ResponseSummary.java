@@ -10,6 +10,6 @@ public class ResponseSummary {
     private String username;
     private String firstName;
     private String lastName;
-    private Boolean status;
+    private boolean status;
     private List<YearlyWorkload> list;
 }

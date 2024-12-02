@@ -24,7 +24,7 @@ public class Trainer {
     private String lastName;
 
     @Column(name = "isActive", nullable = false)
-    private Boolean isActive;
+    private boolean isActive;
 
     @OneToMany(mappedBy = "trainer", cascade = CascadeType.REMOVE)
     private List<Training> trainings;

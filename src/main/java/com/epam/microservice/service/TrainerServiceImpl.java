@@ -1,5 +1,6 @@
 package com.epam.microservice.service;
 
+import com.epam.microservice.common.EntityNotFoundException;
 import com.epam.microservice.domain.Trainer;
 import com.epam.microservice.domain.Training;
 import com.epam.microservice.dto.ActionType;
@@ -12,7 +13,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.YearMonth;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -20,15 +20,12 @@ import java.util.stream.Collectors;
 @Service
 @AllArgsConstructor
 public class TrainerServiceImpl implements TrainerService {
-    private static final String NOT_VALID = "Invalid field inputted";
     private final TrainerRepository repository;
     private final TrainingRepository trainingRepository;
 
     @Override
     @Transactional
     public void submitWorkloadChanges(Trainer trainer, Training training, ActionType type) {
-        validateTrainer(trainer);
-        validateTraining(training);
         if (repository.existsByUsername(trainer.getUsername())) {
             submitWorkloadChangesWithExistingTrainer(trainer.getUsername(), training, type);
         } else {
@@ -43,12 +40,13 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional(readOnly = true)
     public ResponseSummary getSummary(String username) {
         Trainer trainer = repository.getTrainerByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_VALID));
+                .orElseThrow(() -> new EntityNotFoundException("Trainer with username " + username +
+                        " was not found"));
         ResponseSummary summary = ResponseSummary.builder()
                 .username(trainer.getUsername())
                 .firstName(trainer.getFirstName())
                 .lastName(trainer.getLastName())
-                .status(trainer.getIsActive())
+                .status(trainer.isActive())
                 .build();
         summary.setList(collectWorkload(trainer.getTrainings()));
         return summary;
@@ -83,11 +81,12 @@ public class TrainerServiceImpl implements TrainerService {
     private void submitWorkloadChangesWithExistingTrainer(String username,
                                                           Training training, ActionType type) {
         if (type == ActionType.DELETE) {
-            trainingRepository.deleteByDateAndDurationAndTrainer_Username(training.getDate(),
+            trainingRepository.deleteByParameters(training.getDate(),
                     training.getDuration(), username);
         } else {
             training.setTrainer(repository.getTrainerByUsername(username)
-                    .orElseThrow(() -> new IllegalArgumentException(NOT_VALID)));
+                    .orElseThrow(() -> new EntityNotFoundException("Trainer with username " + username +
+                            " was not found")));
             trainingRepository.save(training);
         }
     }
@@ -96,22 +95,5 @@ public class TrainerServiceImpl implements TrainerService {
         repository.save(trainer);
         training.setTrainer(trainer);
         trainingRepository.save(training);
-    }
-
-    private void validateTrainer(Trainer trainer) {
-        List<String> fields = new ArrayList<>();
-        fields.add(trainer.getUsername());
-        fields.add(trainer.getFirstName());
-        fields.add(trainer.getLastName());
-        fields.forEach(s -> {
-            if (s == null || s.isEmpty()) throw new IllegalArgumentException(NOT_VALID);
-        });
-        if (trainer.getIsActive() == null) throw new IllegalArgumentException(NOT_VALID);
-    }
-
-    private void validateTraining(Training training) {
-        if (training.getDate() == null || training.getDuration() <= 0) {
-            throw new IllegalArgumentException(NOT_VALID);
-        }
     }
 }

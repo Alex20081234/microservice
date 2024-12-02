@@ -18,6 +18,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         String jwt = jwtService.parseJwt(request);
         if (jwt == null || !jwtService.validateJwtToken(jwt)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid token");
+            return;
         }
         filterChain.doFilter(request, response);
     }

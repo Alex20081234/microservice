@@ -8,6 +8,8 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = true)
 @Entity
 public class Trainer {
     @Id
@@ -15,6 +17,8 @@ public class Trainer {
     private Integer id;
 
     @Column(name = "username", nullable = false)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private String username;
 
     @Column(name = "firstName", nullable = false)

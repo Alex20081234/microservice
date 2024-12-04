@@ -1,16 +1,16 @@
 package com.epam.microservice.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 import java.time.LocalDate;
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = true)
 @Entity
 public class Training {
     @Id
@@ -22,8 +22,12 @@ public class Training {
     private Trainer trainer;
 
     @Column(name = "training_date", nullable = false)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private LocalDate date;
 
     @Column(name = "training_duration", nullable = false)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private int duration;
 }

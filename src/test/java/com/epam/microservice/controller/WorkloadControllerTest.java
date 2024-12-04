@@ -43,18 +43,19 @@ class WorkloadControllerTest {
 
     @Test
     void submitWorkloadChangesShouldTryToProcessChanges() throws Exception {
-        RequestParams params = RequestParams.builder()
-                .username("Jane.Doe")
-                .firstName("Jane")
-                .lastName("Doe")
-                .date(LocalDate.now())
-                .duration(30)
-                .type(ActionType.ADD)
+        SubmitWorkloadChangesRequestBody body = SubmitWorkloadChangesRequestBody.builder()
+                .trainerUsername("Jane.Doe")
+                .trainerFirstName("Jane")
+                .trainerLastName("Doe")
+                .trainerIsActive(true)
+                .trainingDate(LocalDate.now())
+                .trainingDurationMinutes(30)
+                .changeType(ActionType.ADD)
                 .build();
         doNothing().when(service).submitWorkloadChanges(any(), any(), any());
         mockMvc.perform(patch("/api/v1/workload/submit")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(params)))
+                        .content(mapper.writeValueAsString(body)))
                 .andExpect(status().isNoContent());
     }
 

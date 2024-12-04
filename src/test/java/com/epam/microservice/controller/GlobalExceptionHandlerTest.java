@@ -1,5 +1,6 @@
 package com.epam.microservice.controller;
 
+import com.epam.microservice.common.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -28,6 +29,14 @@ class GlobalExceptionHandlerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(globalExceptionHandler)
                 .build();
+    }
+
+    @Test
+    void handleEntityNotFoundExceptionShouldProcessEntityNotFoundException() throws Exception {
+        when(controller.getSummary(anyString())).thenThrow(new EntityNotFoundException("No such user"));
+        mockMvc.perform(get("/api/v1/workload/summary/Tom.Doe"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("No such user"));
     }
 
     @Test

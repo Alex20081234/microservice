@@ -7,14 +7,14 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 class DeadLetterQueueSenderServiceImplTest {
-    private final String queueName = "test-queue";
+    private static final String QUEUE_NAME = "test-queue";
     private JmsTemplate jmsTemplate;
     private DeadLetterQueueSenderServiceImpl senderService;
 
     @BeforeEach
     void setUp() {
         jmsTemplate = mock(JmsTemplate.class);
-        senderService = new DeadLetterQueueSenderServiceImpl(jmsTemplate, queueName);
+        senderService = new DeadLetterQueueSenderServiceImpl(jmsTemplate, QUEUE_NAME);
     }
 
     @Test
@@ -22,6 +22,6 @@ class DeadLetterQueueSenderServiceImplTest {
         String message = "Test message";
         doNothing().when(jmsTemplate).convertAndSend(anyString(), anyString());
         senderService.sendMessage(message);
-        verify(jmsTemplate, times(1)).convertAndSend(queueName, message);
+        verify(jmsTemplate, times(1)).convertAndSend(QUEUE_NAME, message);
     }
 }

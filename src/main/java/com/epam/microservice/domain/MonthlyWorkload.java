@@ -1,4 +1,4 @@
-package com.epam.microservice.dto;
+package com.epam.microservice.domain;
 
 import lombok.Builder;
 import lombok.Data;
@@ -9,4 +9,8 @@ import java.time.Month;
 public class MonthlyWorkload {
     private Month month;
     private int workingHours;
+
+    public void setWorkingHours(int hours) {
+        workingHours += hours;
+    }
 }

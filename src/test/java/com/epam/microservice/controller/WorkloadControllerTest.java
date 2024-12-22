@@ -1,7 +1,9 @@
 package com.epam.microservice.controller;
 
+import com.epam.microservice.domain.MonthlyWorkload;
+import com.epam.microservice.domain.YearlyWorkload;
 import com.epam.microservice.dto.*;
-import com.epam.microservice.service.TrainerService;
+import com.epam.microservice.service.TrainerSummariesService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +32,7 @@ class WorkloadControllerTest {
     private MockMvc mockMvc;
 
     @Mock
-    private TrainerService service;
+    private TrainerSummariesService service;
 
     @InjectMocks
     private WorkloadController controller;
@@ -53,7 +55,7 @@ class WorkloadControllerTest {
                 .trainingDurationMinutes(30)
                 .changeType(ActionType.ADD)
                 .build();
-        doNothing().when(service).submitWorkloadChanges(any(), any(), any());
+        doNothing().when(service).submitWorkloadChanges(any());
         mockMvc.perform(patch("/api/v1/workload/submit")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(body)))

@@ -1,5 +1,6 @@
 package com.epam.microservice.dto;
 
+import com.epam.microservice.domain.YearlyWorkload;
 import lombok.Builder;
 import lombok.Data;
 import java.util.List;

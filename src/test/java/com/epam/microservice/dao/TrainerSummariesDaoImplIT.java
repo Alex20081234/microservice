@@ -12,7 +12,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Transactional
 class TrainerSummariesDaoImplIT {
     private MonthlyWorkload monthlyWorkload;
     private YearlyWorkload yearlyWorkload;

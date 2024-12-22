@@ -9,7 +9,6 @@ import com.epam.microservice.dto.SubmitWorkloadChangesRequestBody;
 import com.epam.microservice.dao.TrainerSummariesDao;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
@@ -18,7 +17,6 @@ public class TrainerSummariesServiceImpl implements TrainerSummariesService {
     private final TrainerSummariesDao dao;
 
     @Override
-    @Transactional
     public void submitWorkloadChanges(SubmitWorkloadChangesRequestBody body) {
         if (!dao.exists(body.getTrainerUsername()) && body.getChangeType() == ActionType.DELETE) {
             throw new IllegalArgumentException("Invalid action type for nonexistent trainer");
@@ -27,7 +25,6 @@ public class TrainerSummariesServiceImpl implements TrainerSummariesService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ResponseSummary getSummary(String username) {
         TrainerSummary summary = dao.getTrainerSummary(username);
         ResponseSummary response = ResponseSummary.builder()

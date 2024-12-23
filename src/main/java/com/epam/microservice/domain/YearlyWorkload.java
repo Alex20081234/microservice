@@ -19,6 +19,12 @@ public class YearlyWorkload {
         if (list == null) {
             list = new ArrayList<>();
         }
-        list.addAll(new ArrayList<>(List.of(workload)));
+        if (workload != null) {
+            for (MonthlyWorkload current : workload) {
+                if (current != null) {
+                    list.add(current);
+                }
+            }
+        }
     }
 }

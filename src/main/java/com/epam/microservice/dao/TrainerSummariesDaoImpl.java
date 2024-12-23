@@ -1,7 +1,6 @@
 package com.epam.microservice.dao;
 
 import com.epam.microservice.common.Dao;
-import com.epam.microservice.common.EntityNotFoundException;
 import com.epam.microservice.domain.MonthlyWorkload;
 import com.epam.microservice.domain.TrainerSummary;
 import com.epam.microservice.domain.YearlyWorkload;
@@ -11,6 +10,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import java.util.List;
+import java.util.Optional;
 
 @Dao
 @AllArgsConstructor
@@ -18,23 +18,19 @@ public class TrainerSummariesDaoImpl implements TrainerSummariesDao {
     private final MongoTemplate template;
 
     @Override
-    public TrainerSummary getTrainerSummary(String username) {
+    public Optional<TrainerSummary> getTrainerSummary(String username) {
         Query query = new Query();
         query.addCriteria(Criteria.where("username").is(username));
-        TrainerSummary trainerSummary = template.findOne(query, TrainerSummary.class);
-        if (trainerSummary == null) {
-            throw new EntityNotFoundException("Trainer summary not found for username: " + username);
-        }
-        return trainerSummary;
+        return Optional.ofNullable(template.findOne(query, TrainerSummary.class));
     }
 
     @Override
-    public void updateOrNewDocument(TrainerSummary summary) {
+    public void updateOrSave(TrainerSummary summary) {
         if (exists(summary.getUsername())) {
             Query query = new Query();
             query.addCriteria(Criteria.where("username").is(summary.getUsername()));
             Update update = new Update();
-            update.set("workload", updateWorkload(summary.getUsername(), summary.getWorkload().get(0)));
+            update.set("workload", updateWorkload(summary.getUsername(), summary.getWorkloads().get(0)));
             template.updateFirst(query, update, TrainerSummary.class);
         } else {
             template.save(summary);
@@ -53,10 +49,10 @@ public class TrainerSummariesDaoImpl implements TrainerSummariesDao {
         query.addCriteria(Criteria.where("username").is(username));
         query.fields().include("workload");
         TrainerSummary summary = template.findOne(query, TrainerSummary.class);
-        List<YearlyWorkload> existingWorkload = summary.getWorkload();
+        List<YearlyWorkload> existingWorkloads = summary.getWorkloads();
         MonthlyWorkload currentMonthWorkload = yearly.getList().get(0);
         boolean changesApplied = false;
-        for (YearlyWorkload y : existingWorkload) {
+        for (YearlyWorkload y : existingWorkloads) {
             if (y.getYear() == yearly.getYear()) {
                 for (MonthlyWorkload m : y.getList()) {
                     if (m.getMonth() == currentMonthWorkload.getMonth()) {
@@ -71,8 +67,8 @@ public class TrainerSummariesDaoImpl implements TrainerSummariesDao {
             }
         }
         if (!changesApplied) {
-            existingWorkload.add(yearly);
+            existingWorkloads.add(yearly);
         }
-        return existingWorkload;
+        return existingWorkloads;
     }
 }

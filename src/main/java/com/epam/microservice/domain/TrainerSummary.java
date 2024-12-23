@@ -28,5 +28,5 @@ public class TrainerSummary {
     @Field(name = "status")
     private boolean status;
     @Field(name = "workload")
-    private List<YearlyWorkload> workload;
+    private List<YearlyWorkload> workloads;
 }

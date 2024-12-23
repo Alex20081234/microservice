@@ -1,5 +1,6 @@
 package com.epam.microservice.service;
 
+import com.epam.microservice.common.EntityNotFoundException;
 import com.epam.microservice.domain.MonthlyWorkload;
 import com.epam.microservice.domain.TrainerSummary;
 import com.epam.microservice.domain.YearlyWorkload;
@@ -16,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
+import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,27 +56,27 @@ class TrainerSummariesServiceImplTest {
     @Test
     void submitWorkloadChangesShouldTryToMakeChanges() {
         when(dao.exists(anyString())).thenReturn(true);
-        doNothing().when(dao).updateOrNewDocument(any());
+        doNothing().when(dao).updateOrSave(any());
         service.submitWorkloadChanges(body);
         TrainerSummary expected = TrainerSummary.builder()
                 .username(body.getTrainerUsername())
                 .firstName(body.getTrainerFirstName())
                 .lastName(body.getTrainerLastName())
                 .status(body.getTrainerIsActive())
-                .workload(List.of(yearlyWorkload))
+                .workloads(List.of(yearlyWorkload))
                 .build();
-        verify(dao, times(1)).updateOrNewDocument(expected);
+        verify(dao, times(1)).updateOrSave(expected);
         when(dao.exists(anyString())).thenReturn(true);
-        doNothing().when(dao).updateOrNewDocument(any());
+        doNothing().when(dao).updateOrSave(any());
         body.setChangeType(ActionType.DELETE);
         service.submitWorkloadChanges(body);
-        verify(dao, times(1)).updateOrNewDocument(expected);
+        verify(dao, times(1)).updateOrSave(expected);
         when(dao.exists(anyString())).thenReturn(false);
-        doNothing().when(dao).updateOrNewDocument(any());
+        doNothing().when(dao).updateOrSave(any());
         body.setChangeType(ActionType.ADD);
         body.setTrainerUsername("Nonexistent");
         service.submitWorkloadChanges(body);
-        verify(dao, times(1)).updateOrNewDocument(expected);
+        verify(dao, times(1)).updateOrSave(expected);
     }
 
     @Test
@@ -87,6 +89,12 @@ class TrainerSummariesServiceImplTest {
     }
 
     @Test
+    void getSummaryShouldThrowEntityNotFoundExceptionWhenSummaryNotFound() {
+        RuntimeException e = assertThrows(EntityNotFoundException.class, () -> service.getSummary("Nonexistent"));
+        assertEquals("Trainer summary for username Nonexistent was not found", e.getMessage());
+    }
+
+    @Test
     void getSummaryShouldReturnSummary() {
         TrainerSummary summary = TrainerSummary.builder()
                 .id("12345")
@@ -94,9 +102,9 @@ class TrainerSummariesServiceImplTest {
                 .firstName(body.getTrainerFirstName())
                 .lastName(body.getTrainerLastName())
                 .status(body.getTrainerIsActive())
-                .workload(List.of(yearlyWorkload))
+                .workloads(List.of(yearlyWorkload))
                 .build();
-        when(dao.getTrainerSummary(anyString())).thenReturn(summary);
+        when(dao.getTrainerSummary(anyString())).thenReturn(Optional.of(summary));
         ResponseSummary expected = ResponseSummary.builder()
                 .username(body.getTrainerUsername())
                 .firstName(body.getTrainerFirstName())

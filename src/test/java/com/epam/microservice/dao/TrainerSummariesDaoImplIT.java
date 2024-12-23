@@ -1,6 +1,5 @@
 package com.epam.microservice.dao;
 
-import com.epam.microservice.common.EntityNotFoundException;
 import com.epam.microservice.domain.MonthlyWorkload;
 import com.epam.microservice.domain.TrainerSummary;
 import com.epam.microservice.domain.YearlyWorkload;
@@ -43,7 +42,7 @@ class TrainerSummariesDaoImplIT {
                 .firstName("Jane")
                 .lastName("Doe")
                 .status(true)
-                .workload(new ArrayList<>(List.of(yearlyWorkload)))
+                .workloads(new ArrayList<>(List.of(yearlyWorkload)))
                 .build();
     }
 
@@ -55,46 +54,40 @@ class TrainerSummariesDaoImplIT {
 
     @Test
     void getTrainerSummaryShouldReturnSummary() {
-        dao.updateOrNewDocument(summary);
-        assertEquals(summary, dao.getTrainerSummary(summary.getUsername()));
+        dao.updateOrSave(summary);
+        assertEquals(summary, dao.getTrainerSummary(summary.getUsername()).orElse(null));
         cleanUp();
-    }
-
-    @Test
-    void getTrainerSummaryShouldThrowEntityNotFoundExceptionWhenSummaryNotFound() {
-        RuntimeException e = assertThrows(EntityNotFoundException.class, () -> dao.getTrainerSummary("Nonexistent"));
-        assertEquals("Trainer summary not found for username: " + "Nonexistent", e.getMessage());
     }
 
     @Test
     void existsShouldReturnWhetherDocumentExistsInDB() {
         assertFalse(dao.exists("Nonexistent"));
-        dao.updateOrNewDocument(summary);
+        dao.updateOrSave(summary);
         assertTrue(dao.exists(summary.getUsername()));
         cleanUp();
     }
 
     @Test
-    void updateOrNewDocumentShouldSaveDocumentWhenNonexistent() {
-        dao.updateOrNewDocument(summary);
+    void updateOrSaveShouldSaveDocumentWhenNonexistent() {
+        dao.updateOrSave(summary);
         assertTrue(dao.exists(summary.getUsername()));
         cleanUp();
     }
 
     @Test
-    void updateOrNewDocumentShouldUpdateDocumentWhenExistsWithSameMonth() {
-        dao.updateOrNewDocument(summary);
-        dao.updateOrNewDocument(summary);
-        summary.getWorkload().get(0).getList().get(0).setWorkingHours(monthlyWorkload.getWorkingHours());
-        assertEquals(summary, dao.getTrainerSummary(summary.getUsername()));
+    void updateOrSaveShouldUpdateDocumentWhenExistsWithSameMonth() {
+        dao.updateOrSave(summary);
+        dao.updateOrSave(summary);
+        summary.getWorkloads().get(0).getList().get(0).setWorkingHours(monthlyWorkload.getWorkingHours());
+        assertEquals(summary, dao.getTrainerSummary(summary.getUsername()).orElse(null));
         cleanUp();
     }
 
     @Test
-    void updateOrNewDocumentShouldUpdateDocumentWhenExistsWithDifferentMonth() {
-        dao.updateOrNewDocument(summary);
-        summary.getWorkload().get(0).getList().get(0).setMonth(Month.NOVEMBER);
-        dao.updateOrNewDocument(summary);
+    void updateOrSaveShouldUpdateDocumentWhenExistsWithDifferentMonth() {
+        dao.updateOrSave(summary);
+        summary.getWorkloads().get(0).getList().get(0).setMonth(Month.NOVEMBER);
+        dao.updateOrSave(summary);
         MonthlyWorkload m1 = MonthlyWorkload.builder()
                 .workingHours(60)
                 .month(Month.DECEMBER)
@@ -107,20 +100,24 @@ class TrainerSummariesDaoImplIT {
                 .year(yearlyWorkload.getYear())
                 .list(List.of(m1, m2))
                 .build();
-        assertEquals(List.of(y), dao.getTrainerSummary(summary.getUsername()).getWorkload());
+        assertEquals(List.of(y), dao.getTrainerSummary(summary.getUsername()).orElse(null).getWorkloads());
         cleanUp();
     }
 
     @Test
-    void updateOrNewDocumentShouldUpdateDocumentWhenExistsWithDifferentYear() {
-        dao.updateOrNewDocument(summary);
-        summary.getWorkload().get(0).setYear(2025);
-        dao.updateOrNewDocument(summary);
+    void updateOrSaveShouldUpdateDocumentWhenExistsWithDifferentYear() {
+        dao.updateOrSave(summary);
+        summary.getWorkloads().get(0).setYear(2025);
+        dao.updateOrSave(summary);
         YearlyWorkload y = YearlyWorkload.builder()
                 .year(2024)
                 .build();
-        y.add(yearlyWorkload.getList().toArray(new MonthlyWorkload[0]));
-        assertEquals(List.of(y, yearlyWorkload), dao.getTrainerSummary(summary.getUsername()).getWorkload());
+        y.add(null);
+        MonthlyWorkload[] array = new MonthlyWorkload[2];
+        array[0] = (MonthlyWorkload) yearlyWorkload.getList().toArray()[0];
+        array[1] = null;
+        y.add(array);
+        assertEquals(List.of(y, yearlyWorkload), dao.getTrainerSummary(summary.getUsername()).orElse(null).getWorkloads());
         cleanUp();
     }
 }

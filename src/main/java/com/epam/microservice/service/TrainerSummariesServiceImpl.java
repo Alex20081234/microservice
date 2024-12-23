@@ -1,5 +1,6 @@
 package com.epam.microservice.service;
 
+import com.epam.microservice.common.EntityNotFoundException;
 import com.epam.microservice.domain.TrainerSummary;
 import com.epam.microservice.dto.ActionType;
 import com.epam.microservice.domain.MonthlyWorkload;
@@ -21,19 +22,20 @@ public class TrainerSummariesServiceImpl implements TrainerSummariesService {
         if (!dao.exists(body.getTrainerUsername()) && body.getChangeType() == ActionType.DELETE) {
             throw new IllegalArgumentException("Invalid action type for nonexistent trainer");
         }
-        dao.updateOrNewDocument(composeSummary(body));
+        dao.updateOrSave(composeSummary(body));
     }
 
     @Override
     public ResponseSummary getSummary(String username) {
-        TrainerSummary summary = dao.getTrainerSummary(username);
+        TrainerSummary summary = dao.getTrainerSummary(username)
+                .orElseThrow(() -> new EntityNotFoundException("Trainer summary for username " + username + " was not found"));
         ResponseSummary response = ResponseSummary.builder()
                 .username(summary.getUsername())
                 .firstName(summary.getFirstName())
                 .lastName(summary.getLastName())
                 .status(summary.isStatus())
                 .build();
-        response.setList(summary.getWorkload());
+        response.setList(summary.getWorkloads());
         return response;
     }
 
@@ -52,7 +54,7 @@ public class TrainerSummariesServiceImpl implements TrainerSummariesService {
                 .firstName(body.getTrainerFirstName())
                 .lastName(body.getTrainerLastName())
                 .status(body.getTrainerIsActive())
-                .workload(List.of(yearlyWorkload))
+                .workloads(List.of(yearlyWorkload))
                 .build();
     }
 }

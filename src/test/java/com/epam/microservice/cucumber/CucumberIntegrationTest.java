@@ -8,8 +8,9 @@ import org.junit.platform.suite.api.Suite;
 
 @Suite
 @IncludeEngines("cucumber")
-@SelectClasspathResource("com/epam/microservice/steps")
+@SelectClasspathResource("com/epam/microservice/steps/component")
 @ConfigurationParameter(key = Constants.FEATURES_PROPERTY_NAME, value = "src/test/resources/features")
-@ConfigurationParameter(key = Constants.GLUE_PROPERTY_NAME, value = "com/epam/microservice/steps")
-@ConfigurationParameter(key = Constants.PLUGIN_PROPERTY_NAME, value = "pretty, html:target/cucumber-report/cucumber.html")
+@ConfigurationParameter(key = Constants.GLUE_PROPERTY_NAME, value = "com/epam/microservice/steps/integration")
+@ConfigurationParameter(key = Constants.FILTER_TAGS_PROPERTY_NAME, value = "@integration")
+@ConfigurationParameter(key = Constants.PLUGIN_PROPERTY_NAME, value = "pretty, html:target/cucumber-report/cucumber-integration.html")
 public class CucumberIntegrationTest {}

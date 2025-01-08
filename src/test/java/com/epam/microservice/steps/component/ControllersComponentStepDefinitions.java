@@ -1,4 +1,4 @@
-package com.epam.microservice.steps;
+package com.epam.microservice.steps.component;
 
 import com.epam.microservice.common.EntityNotFoundException;
 import com.epam.microservice.cucumber.CucumberSpringConfiguration;
@@ -30,23 +30,23 @@ import static org.mockito.Mockito.when;
 
 @CucumberContextConfiguration
 @ExtendWith(MockitoExtension.class)
-public class StepDefinitions extends CucumberSpringConfiguration {
+public class ControllersComponentStepDefinitions extends CucumberSpringConfiguration {
+    @MockBean
+    private TrainerSummariesService service;
     @Value("${microservice.secretKey}")
     private String key;
     private String jwt;
     private ResponseEntity<?> response;
     private SubmitWorkloadChangesRequestBody requestBody;
-    @MockBean
-    private TrainerSummariesService service;
 
     @Given("a valid SubmitWorkloadChangesRequestBody")
     public void aValidSubmitWorkloadChangesRequestBody() {
         requestBody = SubmitWorkloadChangesRequestBody.builder()
-                .trainerUsername("john.doe")
+                .trainerUsername("John.Doe")
                 .trainerFirstName("John")
                 .trainerLastName("Doe")
                 .trainerIsActive(true)
-                .trainingDate(LocalDate.now())
+                .trainingDate(LocalDate.of(2025, 1, 10))
                 .trainingDurationMinutes(90)
                 .changeType(ActionType.ADD)
                 .build();
@@ -59,7 +59,7 @@ public class StepDefinitions extends CucumberSpringConfiguration {
                 .trainerFirstName("John")
                 .trainerLastName("Doe")
                 .trainerIsActive(true)
-                .trainingDate(LocalDate.now())
+                .trainingDate(LocalDate.of(2025, 1, 10))
                 .trainingDurationMinutes(90)
                 .changeType(ActionType.ADD)
                 .build();

@@ -1,4 +1,4 @@
-package com.epam.microservice.steps.integration;
+package com.epam.microservice.steps.component;
 
 import com.epam.microservice.domain.TrainerSummary;
 import io.cucumber.java.After;

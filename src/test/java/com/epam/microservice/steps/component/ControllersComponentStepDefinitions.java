@@ -1,47 +1,48 @@
 package com.epam.microservice.steps.component;
 
-import com.epam.microservice.common.EntityNotFoundException;
 import com.epam.microservice.cucumber.CucumberSpringConfiguration;
+import com.epam.microservice.domain.MonthlyWorkload;
+import com.epam.microservice.domain.TrainerSummary;
+import com.epam.microservice.domain.YearlyWorkload;
 import com.epam.microservice.dto.ActionType;
-import com.epam.microservice.dto.SubmitWorkloadChangesRequestBody;
 import com.epam.microservice.dto.ResponseSummary;
-import com.epam.microservice.service.TrainerSummariesService;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.When;
-import io.cucumber.java.en.Then;
+import com.epam.microservice.dto.SubmitWorkloadChangesRequestBody;
 import io.cucumber.java.en.And;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import io.cucumber.spring.CucumberContextConfiguration;
 import io.jsonwebtoken.Jwts;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.*;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
 
 @CucumberContextConfiguration
-@ExtendWith(MockitoExtension.class)
 public class ControllersComponentStepDefinitions extends CucumberSpringConfiguration {
-    @MockBean
-    private TrainerSummariesService service;
+    @Autowired
+    private MongoTemplate template;
     @Value("${microservice.secretKey}")
     private String key;
     private String jwt;
     private ResponseEntity<?> response;
-    private SubmitWorkloadChangesRequestBody requestBody;
+    private SubmitWorkloadChangesRequestBody body;
 
-    @Given("a valid SubmitWorkloadChangesRequestBody")
-    public void aValidSubmitWorkloadChangesRequestBody() {
-        requestBody = SubmitWorkloadChangesRequestBody.builder()
+    @Given("a valid request body")
+    public void givenAValidRequestBody() {
+        body = SubmitWorkloadChangesRequestBody.builder()
                 .trainerUsername("John.Doe")
                 .trainerFirstName("John")
                 .trainerLastName("Doe")
@@ -52,25 +53,17 @@ public class ControllersComponentStepDefinitions extends CucumberSpringConfigura
                 .build();
     }
 
-    @Given("an invalid SubmitWorkloadChangesRequestBody")
-    public void anInvalidSubmitWorkloadChangesRequestBody() {
-        requestBody = SubmitWorkloadChangesRequestBody.builder()
-                .trainerUsername("")
-                .trainerFirstName("John")
-                .trainerLastName("Doe")
-                .trainerIsActive(true)
-                .trainingDate(LocalDate.of(2025, 1, 10))
-                .trainingDurationMinutes(90)
-                .changeType(ActionType.ADD)
-                .build();
+    @Given("a valid JWT")
+    public void givenAValidJWT() {
+        jwt = generateJwtToken();
     }
 
     @When("I send a PATCH request to {string} {string} exception")
-    public void iSendAPATCHRequestTo(String endpoint, String isExpException) {
+    public void whenISendAPATCHRequest(String endpoint, String isExpException) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(jwt);
-        HttpEntity<SubmitWorkloadChangesRequestBody> entity = new HttpEntity<>(requestBody, headers);
+        HttpEntity<SubmitWorkloadChangesRequestBody> entity = new HttpEntity<>(body, headers);
         if (isExpException.equals("expecting")) {
             response = testRestTemplate.exchange(endpoint, HttpMethod.PATCH, entity, String.class);
         } else {
@@ -79,23 +72,46 @@ public class ControllersComponentStepDefinitions extends CucumberSpringConfigura
     }
 
     @Then("the response status should be {int}")
-    public void theResponseStatusShouldBe(int statusCode) {
+    public void thenTheResponseStatusShouldBe(int statusCode) {
         assertEquals(statusCode, response.getStatusCode().value());
     }
 
-    @Given("an existing username {string}")
-    public void anExistingUsername(String username) {
-        ResponseSummary summary = ResponseSummary.builder()
-                .username(username)
+    @And("db should contain new workload")
+    public void andDbShouldContainNewWorkload() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("username").is("John.Doe"));
+        TrainerSummary summary = template.findOne(query, TrainerSummary.class);
+        assertEquals("John.Doe", summary.getUsername());
+        assertEquals("John", summary.getFirstName());
+        assertEquals("Doe", summary.getLastName());
+        assertTrue(summary.isStatus());
+        MonthlyWorkload monthlyWorkload = summary.getWorkloads().get(0).getList().get(0);
+        assertEquals(Month.JANUARY, monthlyWorkload.getMonth());
+        assertEquals(90, monthlyWorkload.getWorkingHours());
+    }
+
+    @Given("an existing user info")
+    public void givenAnExistingUserInfo() {
+        MonthlyWorkload m = MonthlyWorkload.builder()
+                .month(Month.JANUARY)
+                .workingHours(90)
+                .build();
+        YearlyWorkload y = YearlyWorkload.builder()
+                .list(List.of(m))
+                .year(2025)
+                .build();
+        TrainerSummary summary = TrainerSummary.builder()
+                .username("John.Doe")
                 .firstName("John")
                 .lastName("Doe")
                 .status(true)
+                .workloads(List.of(y))
                 .build();
-        when(service.getSummary(username)).thenReturn(summary);
+        template.save(summary);
     }
 
     @When("I send a GET request to {string} {string} exception")
-    public void iSendAGETRequestTo(String endpoint, String isExpException) {
+    public void whenISendAGETRequest(String endpoint, String isExpException) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(jwt);
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
@@ -106,37 +122,51 @@ public class ControllersComponentStepDefinitions extends CucumberSpringConfigura
         }
     }
 
-    @And("the response body should contain a username {string}")
-    public void theResponseBodyShouldContainAUsername(String username) {
-        ResponseSummary actual = (ResponseSummary) response.getBody();
-        assertEquals(username, actual.getUsername());
+    @And("the response body should contain correct info")
+    public void andTheResponseBodyShouldContainCorrectInfo() {
+        ResponseSummary summary = (ResponseSummary) response.getBody();
+        assertEquals("John.Doe", summary.getUsername());
+        assertEquals("John", summary.getFirstName());
+        assertEquals("Doe", summary.getLastName());
+        assertTrue(summary.isStatus());
+        MonthlyWorkload monthlyWorkload = summary.getList().get(0).getList().get(0);
+        assertEquals(Month.JANUARY, monthlyWorkload.getMonth());
+        assertEquals(90, monthlyWorkload.getWorkingHours());
     }
 
-    @Given("a non-existing username {string}")
-    public void aNonExistingUsername(String username) {
-        when(service.getSummary(username))
-                .thenThrow(new EntityNotFoundException("Trainer summary for username " + username + " was not found"));
+    @Given("an invalid request body")
+    public void givenAnInvalidRequestBody() {
+        body = SubmitWorkloadChangesRequestBody.builder()
+                .trainerUsername("")
+                .trainerFirstName("John")
+                .trainerLastName("Doe")
+                .trainerIsActive(true)
+                .trainingDate(LocalDate.of(2025, 1, 10))
+                .trainingDurationMinutes(90)
+                .changeType(ActionType.ADD)
+                .build();
     }
 
-    @And("the response body should contain {string}")
-    public void theResponseBodyShouldContain(String exceptionMessage) {
+    @And("db shouldn't contain changes")
+    public void andDbShouldntContainChanges() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("username").is("John.Doe"));
+        TrainerSummary summary = template.findOne(query, TrainerSummary.class);
+        assertNull(summary);
+    }
+
+    @Then("the response body should contain {string}")
+    public void thenTheResponseBodyShouldContain(String exceptionMessage) {
+        System.out.println(response.getBody().toString());
         assertTrue(response.getBody().toString().contains(exceptionMessage));
     }
 
-    @And("the service throws an unexpected error")
-    public void theServiceThrowsAnUnexpectedError() {
-        doThrow(new RuntimeException("Unexpected database error"))
-                .when(service).submitWorkloadChanges(Mockito.any());
-    }
+    @Given("a non-existing user info")
+    public void givenANonExistingUserInfo() {}
 
-    @And("a valid JWT")
-    public void aValidJWT() {
-       jwt = generateJwtToken();
-    }
-
-    @And("an invalid JWT")
-    public void anInvalidJWT() {
-        jwt = "invalidToken";
+    @Given("an invalid JWT")
+    public void givenAnInvalidJWT() {
+        jwt = "invalid";
     }
 
     private String generateJwtToken() {

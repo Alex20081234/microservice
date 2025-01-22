@@ -1,0 +1,47 @@
+version: "3.9"
+services:
+  microservice:
+    image: microservice-app
+    container_name: microservice-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: microservice-db
+      MQ_HOST: activemq
+    ports:
+      - "8081:8081"
+    networks:
+      - app-network
+    depends_on:
+      - microservice-db
+      - activemq
+
+  microservice-db:
+    image: mongo:5.0
+    container_name: microservice-db
+    build:
+      context: .
+    volumes:
+      - mongodb-data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - app-network
+    command: ["--replSet", "rs0"]
+
+  activemq:
+    image: rmohr/activemq
+    container_name: activemq
+    ports:
+      - "61616:61616"
+      - "8161:8161"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:
